@@ -1,29 +1,32 @@
-name: CI
+name: Windows RDP via Ngrok
 
-on: [push, workflow_dispatch]
+on:
+  workflow_dispatch:
+  push:
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Download latest ngrok (v3)
-        run: Invoke-WebRequest https://github.com/inconshreveable/ngrok/releases/latest/download/ngrok-windows-amd64.zip -OutFile ngrok.zip
+      - name: Download Ngrok
+        run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
 
-      - name: Extract ngrok
+      - name: Extract Ngrok
         run: Expand-Archive ngrok.zip -DestinationPath ngrok
 
-      - name: Auth with ngrok
+      - name: Authenticate Ngrok
         run: .\ngrok\ngrok.exe config add-authtoken $Env:NGROK_AUTH_TOKEN
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
-      - name: Enable RDP (Remote Desktop)
+      - name: Enable Remote Desktop
         run: |
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name 'DenyTSConnections' -Value 0
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
           Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name 'UserAuthentication' -Value 1
-          Set-LocalUser -Name 'runneradmin' -Password (ConvertTo-SecureString 'P@ssw0rd!' -AsPlainText -Force)
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name 'UserAuthentication' -Value 1
+          net user runneradmin P@ssw0rd!
+          Write-Host "RDP Enabled. Username: runneradmin | Password: P@ssw0rd!"
 
-      - name: Start ngrok tunnel
+      - name: Start Ngrok Tunnel
         run: .\ngrok\ngrok.exe tcp 3389
